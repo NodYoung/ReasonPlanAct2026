@@ -1,0 +1,40 @@
+[workspace]
+name = "tutorial_rpa"
+version = "0.1.0"
+description = "Reason Plan Act: ROS 2 + LangChain tutorial"
+channels = ["robostack-kilted", "conda-forge"]
+platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
+
+[dependencies]
+python = "3.12.*"
+
+# ── ROS 2 (Kilted) via RoboStack ─────────────────────────────────────────────
+ros-kilted-ros-base = "*"          # rclpy, ros2 CLI, common interfaces
+ros-kilted-turtlesim = "*"         # turtlesim_node + turtle_teleop_key
+ros-kilted-turtlesim-msgs = "*"    # turtlesim_msgs.msg / .srv
+ros-kilted-geometry-msgs = "*"     # geometry_msgs.msg (Twist, Vector3)
+ros-kilted-std-srvs = "*"          # std_srvs.srv (Empty)
+
+# ── Notebook tooling ─────────────────────────────────────────────────────────
+jupyterlab = "*"
+notebook = "*"
+ipykernel = "*"
+jupytext = ">=1.17.3"
+
+# ── Python / LangChain stack (from requirements.in) ──────────────────────────
+[pypi-dependencies]
+langchain = "*"
+langchain-core = "*"
+langchain-google-genai = "*"
+langchain-ollama = "*"
+ollama = "*"
+python-dotenv = "*"
+tqdm = "*"
+
+# ── Tasks: run with `pixi run <name>` ────────────────────────────────────────
+[tasks]
+turtlesim = "ros2 run turtlesim turtlesim_node"
+teleop = "ros2 run turtlesim turtle_teleop_key"
+kernel = "python -m ipykernel install --user --name tutorial_rpa --display-name 'Python (tutorial_rpa)'"
+tutorial = { cmd = "jupyter lab", depends-on = ["kernel"] }
+notebook = { cmd = "jupyter notebook", depends-on = ["kernel"] }

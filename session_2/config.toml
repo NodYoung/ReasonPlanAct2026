@@ -1,0 +1,73 @@
+# =============================================================================
+# App settings (non-secrets). API keys go in .env only — see .env.example.
+#
+# Some values can be overridden for one run via environment variables:
+# env var name = config key uppercased (e.g. max_trials → MAX_TRIALS).
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# [llm] — default provider + model for every agent.
+#
+# provider: gemini | openai | anthropic | ollama
+# The reviewer model must support vision (image input).
+# -----------------------------------------------------------------------------
+[llm]
+provider = "gemini"
+model = "gemini-3.1-flash-lite"
+
+# Only used when provider = "ollama" (local models on your machine).
+ollama_base_url = "http://localhost:11434"
+
+# Current model examples per provider (add the matching API key in .env):
+#   gemini:    gemini-3.5-flash | gemini-3.1-flash-lite
+#   openai:    gpt-5.6-terra | gpt-5.6-luna
+#   anthropic: claude-sonnet-5 | claude-haiku-4-5
+#   ollama:    qwen3-vl:8b  (vision-capable, for the reviewer)
+
+# -----------------------------------------------------------------------------
+# Per-agent model overrides (optional).
+# Uncomment a block to run that agent on a different provider/model.
+# Any field you omit falls back to [llm].
+# -----------------------------------------------------------------------------
+# [llm.supervisor]
+# provider = "openai"
+# model = "gpt-5.6-luna"
+
+# [llm.blueprint]
+# provider = "anthropic"
+# model = "claude-haiku-4-5"
+
+# [llm.planner]
+# provider = "anthropic"
+# model = "claude-sonnet-5"
+
+# [llm.reviewer]   # must support vision
+# provider = "gemini"
+# model = "gemini-3.5-flash"
+
+# -----------------------------------------------------------------------------
+# [review] — plan review loop (trial image + vision check before drawing)
+# -----------------------------------------------------------------------------
+[review]
+
+# true  = reviewer checks a simulated trial PNG before each part is drawn.
+# false = skip review; every plan goes straight to the navigator.
+# env: REVIEW_ENABLED=0 to disable for one run
+enabled = true
+
+# Max planning trials per part (trial1, trial2, ...). env: MAX_TRIALS
+max_trials = 5
+
+# What to do when a part still fails review after max_trials:
+#   skip        — skip that part and continue with the rest
+#   draw_anyway — draw the last plan despite the failed review
+# env: FAIL_ACTION
+fail_action = "skip"
+
+# -----------------------------------------------------------------------------
+# [park] — move the turtle aside (pen up) after drawing so it doesn't cover ink
+# -----------------------------------------------------------------------------
+[park]
+
+# env: PARK_TURTLE_AFTER_DRAW
+park_turtle_after_draw = true

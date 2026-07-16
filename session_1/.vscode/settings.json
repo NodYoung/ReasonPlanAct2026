@@ -1,0 +1,5 @@
+{
+  // Point VS Code's Python + Jupyter at the pixi environment so the
+  // interpreter/kernel is pre-selected without manual picking.
+  "python.defaultInterpreterPath": "${workspaceFolder}/.pixi/envs/default/bin/python"
+}
