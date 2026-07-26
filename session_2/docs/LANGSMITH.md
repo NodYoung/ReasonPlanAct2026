@@ -19,7 +19,7 @@ When you type "Draw a house", several LLM calls happen behind the scenes: the su
  LANGSMITH_PROJECT=multi-agent-turtlesim
 ```
 
-1. **Run the app as usual** (`pixi run agent`). That's it — LangChain detects these variables automatically and starts sending traces.
+1. **Run the app as usual** (`pixi run agents`). That's it — LangChain detects these variables automatically and starts sending traces.
 
 To turn tracing off, set `LANGSMITH_TRACING=false` (or remove the lines).
 

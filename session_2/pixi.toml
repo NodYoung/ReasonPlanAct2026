@@ -26,6 +26,6 @@ pillow = ">=10.0"
 [tasks]
 sim = "ros2 run turtlesim turtlesim_node"
 teleop = "ros2 run turtlesim turtle_teleop_key"
-agent = { cmd = "python -m src.main", env = { PYTHONPATH = "." } }
+agents = { cmd = "python -m src.main", env = { PYTHONPATH = "." } }
 draw = { cmd = "python -m src.main --request \"Draw a blue square with side length 2.\"", env = { PYTHONPATH = "." } }
 graph = { cmd = "python -m src.visualize_graph", env = { PYTHONPATH = "." } }

@@ -59,7 +59,7 @@ pixi run sim
 **Terminal 2** — agents:
 
 ```bash
-pixi run agent
+pixi run agents
 ```
 
 Try:

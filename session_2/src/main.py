@@ -12,7 +12,7 @@ Before running:
   1. pixi install
   2. cp .env.example .env  and add your LLM API key (providers: config.toml)
   3. Terminal 1: pixi run sim
-  4. Terminal 2: pixi run agent   (this file)
+  4. Terminal 2: pixi run agents   (this file)
 """
 
 from __future__ import annotations
