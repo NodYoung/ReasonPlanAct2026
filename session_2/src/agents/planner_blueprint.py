@@ -1,13 +1,12 @@
 """
-Blueprint planner — split a drawing request into ordered parts.
+Blueprint planner（蓝图规划器）—— 把绘图请求拆分为有序的部件。
 
-Runs once per drawing mission, right after the supervisor starts the
-pipeline. One structured LLM call, no tools:
+每个绘图任务运行一次，就在 supervisor 启动流水线之后。一次结构化 LLM 调用，
+不使用工具：
 
-    "draw a house"  →  parts: body → roof → door, side_length ≈ 3 m
+    "画一个房子"  →  部件：body（主体）→ roof（屋顶）→ door（门），side_length ≈ 3 m
 
-The node writes the blueprint onto the mission notebook; on failure it
-marks the mission failed so the supervisor stops cleanly.
+本节点把蓝图写入任务笔记本；若失败，则标记任务失败，让 supervisor 干净地停止。
 """
 
 from __future__ import annotations
@@ -25,16 +24,16 @@ from src.utils.ros_bridge import TurtleBridge
 from src.workflow.types import WorkflowState
 
 SYSTEM_PROMPT = """You decompose a turtlesim drawing request into ordered parts.
+（你把一个 turtlesim 绘图请求拆解为有序的若干部件。）
 
-Rules:
-- Large base shapes FIRST, small details LAST (house: body, roof, door).
-- Short snake_case part names.
-- Simple shapes are ONE part (square -> square). Use the fewest parts that
-  still make the object recognisable.
-- side_length is the overall size budget in metres. The canvas is 11x11 m
-  (usable 0.25-10.75). Prefer 2-4 m unless the user asked for a specific size.
+规则（Rules）:
+- 大的基础形状在前（FIRST），小的细节在后（LAST）（house: body, roof, door）。
+- 用简短的 snake_case 部件名。
+- 简单形状就是一个部件（square -> square）。用能让物体仍可辨认的最少部件数。
+- side_length 是以米为单位的整体尺寸预算。画布为 11x11 m
+  （可用范围 0.25-10.75）。除非用户指定了尺寸，否则优先取 2-4 m。
 
-Return a ShapeBlueprint.
+返回一个 ShapeBlueprint。
 """
 
 

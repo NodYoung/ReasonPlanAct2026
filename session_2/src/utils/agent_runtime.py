@@ -1,17 +1,17 @@
 """
-Shared runtime bag for the supervisor's LangChain tools.
+主管的 LangChain 工具共享的运行时容器。
 
-When the LLM calls a tool like ``move_forward_tool``, the tool only receives
-arguments the model chose. It does not automatically get the live turtlesim
-bridge or the mission notebook — and the model must not invent those.
+当 LLM 调用某个工具（如 ``move_forward_tool``）时，工具只会收到
+模型所选择的参数。它不会自动获得实时的 turtlesim
+桥接层或任务记事本——而且模型绝不能凭空捏造它们。
 
-So each agent node packs them into an ``AgentRuntime`` and hides it in the
-invoke config::
+因此，每个智能体节点把它们打包进一个 ``AgentRuntime``，并藏在
+invoke 配置里::
 
     agent.invoke(..., config={"configurable": {"agent_runtime": runtime}})
 
-Tools then call ``get_agent_runtime(runtime)`` to open the bag and use
-``rt.bridge`` / ``rt.mission``.
+然后工具调用 ``get_agent_runtime(runtime)`` 来打开这个容器，并使用
+``rt.bridge`` / ``rt.mission``。
 """
 
 from __future__ import annotations
@@ -28,14 +28,14 @@ AGENT_RUNTIME_CONFIG_KEY = "agent_runtime"
 
 @dataclass
 class AgentRuntime:
-    """Live handles shared across one agent turn and its tool calls."""
+    """在一个智能体回合及其工具调用之间共享的实时句柄。"""
 
     bridge: TurtleBridge
     mission: MissionContext
 
 
 def get_agent_runtime(runtime: ToolRuntime) -> AgentRuntime:
-    """Resolve the ``AgentRuntime`` inside a LangChain ``@tool``."""
+    """在 LangChain 的 ``@tool`` 内部解析出 ``AgentRuntime``。"""
     configurable = (runtime.config or {}).get("configurable") or {}
     rt = configurable.get(AGENT_RUNTIME_CONFIG_KEY)
     if isinstance(rt, AgentRuntime):

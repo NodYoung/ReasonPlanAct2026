@@ -1,19 +1,19 @@
 """
-Navigator execution — run a ``MovementPlan`` with **no LLM**.
+导航员执行——运行一个 ``MovementPlan``，**不使用 LLM**。
 
-## Overview
+## 概述
 
-Once the reviewer approves a plan, every turtle step is already known —
-calling an LLM again would be slow and unreliable.
+一旦评审者批准了计划，每一个海龟步骤就都已确定——
+再次调用 LLM 既慢又不可靠。
 
-``execute_plan_deterministic`` walks each step and calls the ROS bridge:
+``execute_plan_deterministic`` 遍历每个步骤并调用 ROS 桥接层：
 
-- ``set_pen`` → colour / width / pen up-down
-- ``move_forward`` → translate and record ink on ``PathTracker``
-- ``rotate`` → change heading
+- ``set_pen`` → 颜色 / 宽度 / 抬笔落笔
+- ``move_forward`` → 平移并在 ``PathTracker`` 上记录墨迹
+- ``rotate`` → 改变朝向
 
-Used by the Navigator node. Returns an ``ExecutionReport`` written back
-into ``MissionContext``.
+由导航员（Navigator）节点使用。返回一个写回到
+``MissionContext`` 的 ``ExecutionReport``。
 """
 
 from __future__ import annotations
@@ -32,15 +32,16 @@ from src.utils.turtle_control import (
 )
 from src.utils.path_tracker import PathTracker
 from src.utils.ros_bridge import TurtleBridge
+from src.utils.log_utils import log  # log() 等价 print()，但会打印「[文件名:行号]」前缀
 
 
 def _should_snap_heading(plan: MovementPlan) -> bool:
-    """Whether to snap heading to cardinal before drawing (currently off)."""
+    """是否在绘制前将朝向对齐到正交方向（当前关闭）。"""
     return False
 
 
 def _snap_heading_to_cardinal(bridge: TurtleBridge) -> None:
-    """Teleport heading to the nearest 90° if drift is noticeable."""
+    """当漂移明显时，将朝向瞬移对齐到最近的 90°。"""
     pose = pose_as_dict(bridge)
     quarter = math.pi / 2
     snapped = round(pose["theta"] / quarter) * quarter
@@ -58,10 +59,10 @@ def execute_plan_deterministic(
     step_offset: int = 0,
 ) -> ExecutionReport:
     """
-    Execute every step of ``plan`` on the live turtle.
+    在实时海龟上执行 ``plan`` 的每一个步骤。
 
-    Records pen-down motion on ``path_tracker`` when provided. Returns an
-    ``ExecutionReport`` with success flag, step counts, and per-step logs.
+    提供 ``path_tracker`` 时，会记录落笔运动。返回一个带有成功标志、
+    步骤计数以及逐步日志的 ``ExecutionReport``。
     """
     if path_tracker is not None and clear_path_tracker:
         path_tracker.clear()
@@ -81,11 +82,9 @@ def execute_plan_deterministic(
             display_step = step_offset + step.step_number
 
             if step.action == StepAction.SET_PEN and step.pen:
-                print(
-                    f"  [Exec] step {display_step}: set_pen "
-                    f"RGB({step.pen.r},{step.pen.g},{step.pen.b})",
-                    flush=True,
-                )
+                log(f"  [Exec] step {display_step}: set_pen "
+                f"RGB({step.pen.r},{step.pen.g},{step.pen.b})",
+                flush=True,)
                 msg = set_pen_color(
                     bridge,
                     step.pen.r,
@@ -116,10 +115,8 @@ def execute_plan_deterministic(
                     heading_snapped = True
                     pose_before = pose_as_dict(bridge)
 
-                print(
-                    f"  [Exec] step {display_step}: move_forward {step.distance} m",
-                    flush=True,
-                )
+                log(f"  [Exec] step {display_step}: move_forward {step.distance} m",
+                flush=True,)
                 if path_tracker is not None and path_tracker.pen_down:
                     path_tracker.start_segment(
                         pose_before["x"], pose_before["y"], step.distance
@@ -130,10 +127,8 @@ def execute_plan_deterministic(
                     path_tracker.finish_segment(pose_after["x"], pose_after["y"])
 
             elif step.action == StepAction.ROTATE and step.angle_degrees is not None:
-                print(
-                    f"  [Exec] step {display_step}: rotate {step.angle_degrees}°",
-                    flush=True,
-                )
+                log(f"  [Exec] step {display_step}: rotate {step.angle_degrees}°",
+                flush=True,)
                 msg = rotate(bridge, step.angle_degrees)
 
             elif step.action == StepAction.TELEPORT:

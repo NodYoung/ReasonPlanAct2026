@@ -1,27 +1,25 @@
 """
-Supervisor — the ONLY orchestrator, and the only agent that talks to the user.
+Supervisor（主管）—— 唯一的编排者，也是唯一与用户对话的 agent。
 
-## First visit (one LLM ReAct turn)
+## 首次访问（一次 LLM ReAct 回合）
 
-Every user message lands here first. The supervisor analyses the request:
+每条用户消息都会先到这里。主管会分析请求：
 
-- Simple turtle task (move, rotate, pen, clear, reset, questions) — it does
-  the work itself with its motion tools and replies. Mission over.
-- Drawing task (a shape or an object made of shapes) — it calls the
-  ``start_drawing`` tool to hand the work to the specialists.
+- 简单的海龟任务（移动、旋转、画笔、清空、重置、提问）—— 它用自己的运动工具
+  亲自完成并回复。任务结束。
+- 绘图任务（一个形状，或由多个形状组成的物体）—— 它调用 ``start_drawing``
+  工具，把工作交给专职 agent。
 
-## Revisits (zero LLM calls)
+## 后续访问（零次 LLM 调用）
 
-Every specialist (blueprint planner, part planner, reviewer, navigator)
-returns here. The drawing pipeline order is fixed, so routing is a plain
-deterministic state machine over ``MissionContext`` — no tokens are spent
-deciding "who's next":
+每个专职 agent（蓝图规划器、部件规划器、审查器、导航器）都会返回到这里。
+绘图流水线的顺序是固定的，所以路由就是一个基于 ``MissionContext`` 的纯确定性
+状态机 —— 不会花费任何 token 去决定"下一个是谁"：
 
-    blueprint → plan part → review → draw → next part → ... → finish
+    蓝图 → 规划部件 → 审查 → 绘制 → 下一部件 → ... → 完成
 
-The reviewer's verdict is also applied here: approve → navigator; reject →
-back to the part planner with feedback + the rejected trial image; retries
-exhausted → skip the part or draw anyway (``[review].fail_action``).
+审查器的结论也在这里应用：批准 → 导航器；拒绝 → 带着反馈和被拒的试验图像
+返回部件规划器；重试次数耗尽 → 跳过该部件或直接绘制（``[review].fail_action``）。
 """
 
 from __future__ import annotations
@@ -54,30 +52,30 @@ from src.workflow.types import WorkflowState
 
 RECURSION_LIMIT = 16
 
-SYSTEM_PROMPT = """You are the Supervisor of a multi-agent turtlesim drawing system.
-You are the ONLY agent that speaks to the user. Be brief and friendly.
+SYSTEM_PROMPT = """你是一个多 agent turtlesim 绘图系统的 Supervisor（主管）。
+你是唯一与用户对话的 agent。回答要简短、友好。
 
-Decide how to handle the user's message:
+判断如何处理用户的消息：
 
-1. DRAWING request — the user wants a shape or object drawn (square, circle,
-   house, cat, rocket, ...): call start_drawing ONCE with a short description.
-   Specialist agents plan and draw it — do NOT draw it yourself with motion tools.
-2. SIMPLE turtle task — one-off actions like "move forward 0.5", "rotate 90",
-   "set pen to red" (red=255,0,0 blue=0,0,255 green=0,255,0), "clear the canvas",
-   "reset", "where are you?": execute it NOW with your motion tools.
-3. QUESTION — answer directly. Useful facts: canvas is 11x11 metres
-   (usable 0.25-10.75), smallest practical move is 0.01 m, pen is RGB 0-255.
+1. DRAWING（绘图）请求 —— 用户想画一个形状或物体（square、circle、house、cat、
+   rocket……）：用一句简短描述调用 start_drawing 一次（ONCE）。
+   由专职 agent 来规划和绘制 —— 不要（do NOT）自己用运动工具去画。
+2. SIMPLE（简单）海龟任务 —— 一次性动作，例如 "move forward 0.5"、"rotate 90"、
+   "set pen to red"（red=255,0,0 blue=0,0,255 green=0,255,0）、"clear the canvas"、
+   "reset"、"where are you?"：立刻（NOW）用你的运动工具执行。
+3. QUESTION（提问）—— 直接回答。有用的事实：画布为 11x11 米
+   （可用范围 0.25-10.75），最小可行移动为 0.01 m，画笔为 RGB 0-255。
 
-Always end with ONE short reply to the user (your final message is shown to them).
+始终以给用户的一句简短回复结尾（你的最终消息会展示给用户）。
 """
 
 
 @tool
 def start_drawing(runtime: ToolRuntime, description: str) -> str:
-    """Hand a drawing request to the specialist pipeline (planner, reviewer, navigator).
+    """把一个绘图请求交给专职流水线（planner、reviewer、navigator）。
 
-    Call this once for any request to draw a shape or object. ``description``
-    is a short summary of what to draw.
+    对任何「画一个形状或物体」的请求都调用本工具一次。``description``
+    是对要画什么的简短概括。
     """
     get_agent_runtime(runtime).mission.drawing = True
     return f"Drawing pipeline started for: {description}. Reply with a one-line kickoff."
@@ -102,7 +100,7 @@ def build_agent() -> CompiledStateGraph:
 
 
 def _final_text(result: dict) -> str:
-    """Extract the assistant's final reply text from a ReAct result."""
+    """从 ReAct 结果中提取助手的最终回复文本。"""
     content = result["messages"][-1].content
     if isinstance(content, str):
         return content.strip()
@@ -117,7 +115,7 @@ def _final_text(result: dict) -> str:
 
 
 def _finish_drawing(ctx: MissionContext, bridge: TurtleBridge) -> None:
-    """Park the turtle and print the mission summary."""
+    """停放海龟并打印任务总结。"""
     if get_config().park_after_draw and ctx.path_tracker.segments:
         try:
             say(ctx, park_turtle_for_clear_view(bridge, ctx.path_tracker))
@@ -135,7 +133,7 @@ def _finish_drawing(ctx: MissionContext, bridge: TurtleBridge) -> None:
 
 
 def _handle_navigator_result(ctx: MissionContext) -> None:
-    """Bookkeep after the navigator drew the current part."""
+    """在导航器绘制完当前部件后进行记账。"""
     ctx.execution_pending = False
     part = ctx.current_part() or "?"
     report = ctx.execution_report
@@ -152,7 +150,7 @@ def _handle_navigator_result(ctx: MissionContext) -> None:
 
 
 def _apply_review_verdict(ctx: MissionContext) -> str:
-    """Turn the reviewer's verdict into the next routing step."""
+    """把审查器的结论转化为下一个路由步骤。"""
     review = ctx.review
     assert review is not None
     cfg = get_config().review
@@ -172,7 +170,7 @@ def _apply_review_verdict(ctx: MissionContext) -> str:
         ctx.parts_skipped.append(part)
         ctx.part_index += 1
         ctx.reset_part_pipeline()
-        return "continue"  # let the pipeline pick the next step
+        return "continue"  # 让流水线挑选下一个步骤
 
     ctx.feedback = review.feedback
     ctx.trial += 1
@@ -182,7 +180,7 @@ def _apply_review_verdict(ctx: MissionContext) -> str:
 
 
 def _pipeline_next(ctx: MissionContext, bridge: TurtleBridge) -> str:
-    """Deterministic drawing pipeline router — runs on every revisit, no LLM."""
+    """确定性的绘图流水线路由器 —— 每次重访时运行，不使用 LLM。"""
     while True:
         if ctx.execution_pending:
             _handle_navigator_result(ctx)
@@ -210,7 +208,7 @@ def _pipeline_next(ctx: MissionContext, bridge: TurtleBridge) -> str:
             step = _apply_review_verdict(ctx)
             if step != "continue":
                 return step
-            continue  # part was skipped — re-evaluate from the top
+            continue  # 该部件被跳过 —— 从头重新评估
 
         return "navigator"
 
@@ -219,11 +217,11 @@ def build_graph_node(bridge: TurtleBridge) -> Callable[[WorkflowState], dict]:
     def node(state: WorkflowState) -> dict:
         ctx = state["ctx"]
 
-        # Revisit during a drawing mission — deterministic routing only.
+        # 绘图任务进行中的重访 —— 仅做确定性路由。
         if ctx.drawing:
             return {"next_agent": _pipeline_next(ctx, bridge)}
 
-        # First visit — one ReAct turn to analyse and act on the request.
+        # 首次访问 —— 用一次 ReAct 回合来分析并处理请求。
         with spinner("Supervisor thinking"):
             result = build_agent().invoke(
                 {"messages": [HumanMessage(content=ctx.user_request)]},

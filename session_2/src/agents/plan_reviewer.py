@@ -1,20 +1,18 @@
 """
-Plan reviewer — draw the plan on a canvas image, look at it, approve or fix.
+Plan reviewer（计划审查器）—— 把计划画到一张画布图像上，看一看，然后批准或修复。
 
-For each planning trial of each part:
+对每个部件的每次规划试验：
 
-1. Simulate the plan's ink (no turtle moves) and render it ON TOP of the ink
-   already drawn — then save it as ``captures/{shape}_{part}_trial{N}.png``.
-   These are the ONLY images the app saves, so the captures folder tells the
-   story of the drawing: which part went wrong, how it was fixed, and how the
-   picture grew part by part.
-2. Free deterministic checks first (no LLM tokens): empty plans and
-   off-canvas ink are rejected immediately with concrete feedback.
-3. Otherwise ONE vision LLM call: does this image make sense for the
-   requested drawing? Approve, or reject with fix instructions.
+1. 模拟计划产生的墨迹（海龟不移动），并把它渲染在已绘墨迹之上 —— 然后保存为
+   ``captures/{shape}_{part}_trial{N}.png``。这些是本应用唯一保存的图像，
+   因此 captures 文件夹讲述了整幅画的故事：哪个部件出了问题、是如何修复的，
+   以及画面是如何一个部件接一个部件生长起来的。
+2. 先做免费的确定性检查（不消耗 LLM token）：空计划和画布外的墨迹会立即被拒绝，
+   并给出具体反馈。
+3. 否则进行一次视觉 LLM 调用：这张图像对于所请求的绘图而言是否合理？批准，
+   或给出修复说明后拒绝。
 
-On reject, the supervisor sends the feedback and the saved trial image back
-to the part planner for the next trial.
+被拒时，supervisor 会把反馈和已保存的试验图像送回部件规划器，用于下一次试验。
 """
 
 from __future__ import annotations
@@ -37,28 +35,28 @@ from src.utils.turtle_control import pose_as_dict
 from src.workflow.types import WorkflowState
 
 SYSTEM_PROMPT = """You review a simulated turtlesim drawing BEFORE the real turtle draws it.
+（在真实海龟绘制之前，你审查一幅模拟出的 turtlesim 绘图。）
 
-The image shows the 11x11 m canvas (blue background) with the ink already
-drawn PLUS the proposed new part. Judge whether the picture makes sense for
-the user's request:
+图像展示的是 11x11 m 画布（蓝色背景）上「已经画好的墨迹」加上「拟新增的部件」。
+判断这幅画面对用户的请求而言是否合理：
 
-- Is the new part in the right place, at the right scale, correctly attached?
-  (roof on top of the body, door on the bottom edge, cockpit at the front, ...)
-- Does the drawing so far still look like the requested object?
-- Reject floating/detached parts, wrong orientation, wrong region, messy
-  geometry, or anything you would not call recognisable.
+- 新部件的位置、比例、衔接是否正确？
+  （屋顶在主体顶部、门在底边、驾驶舱在前部，……）
+- 目前为止的画面是否仍然像用户请求的那个物体？
+- 对以下情况应拒绝（Reject）：漂浮/脱离的部件、朝向错误、区域错误、
+  几何杂乱，或任何你认为不可辨认的东西。
 
-Approve only when the image is a plausible step toward the requested drawing.
-On reject, feedback must be imperative fix instructions the planner can follow,
-one concrete action per line (what is wrong -> what to draw instead, naming
-canvas regions/edges). Never vague criticism.
+仅当图像是朝着用户所求绘图迈出的一个合理步骤时才批准（Approve）。
+拒绝时，feedback 必须是 planner 能照做的祈使式修复说明，
+每行一个具体动作（指出哪里错了 -> 应改画什么，并点明画布的区域/边）。
+绝不要含糊的批评。
 
-Return a PlanReview.
+返回一个 PlanReview。
 """
 
 
 def _merged_preview(ctx: MissionContext, start_pose: tuple[float, float, float]) -> tuple[PathTracker, PathTracker]:
-    """Simulate the current plan; return (new ink only, existing + new ink)."""
+    """模拟当前计划；返回 (仅新墨迹, 已有墨迹 + 新墨迹)。"""
     assert ctx.movement_plan is not None
     new_ink = simulate_plan_to_path_tracker(ctx.movement_plan, start_pose)
     merged = PathTracker()
@@ -80,7 +78,7 @@ def build_graph_node(bridge: TurtleBridge) -> Callable[[WorkflowState], dict]:
 
         new_ink, merged = _merged_preview(ctx, start_pose)
 
-        # Free check 1: a plan that draws nothing.
+        # 免费检查 1：什么都不画的计划。
         if not new_ink.segments:
             _reject(
                 ctx,
@@ -90,13 +88,13 @@ def build_graph_node(bridge: TurtleBridge) -> Callable[[WorkflowState], dict]:
             )
             return {}
 
-        # Save the trial image (the only images this app writes).
+        # 保存试验图像（本应用唯一写入的图像）。
         out = Path("captures") / f"{ctx.shape_name}_{part}_trial{ctx.trial}.png"
         save_image(render_drawing(merged), out)
         ctx.trial_image = str(out.resolve())
         say(ctx, f"[Reviewer] Trial image saved: {out}")
 
-        # Free check 2: ink outside the canvas (replaces the old safety agent).
+        # 免费检查 2：画布外的墨迹（取代了旧的安全 agent）。
         bbox = new_ink.bounding_box()
         fits, issues = bbox_fits_canvas(
             bbox, canvas_min=CANVAS_MIN, canvas_max=CANVAS_MAX, margin=MARGIN
@@ -112,7 +110,7 @@ def build_graph_node(bridge: TurtleBridge) -> Callable[[WorkflowState], dict]:
             )
             return {}
 
-        # One vision LLM call on the trial image.
+        # 对试验图像进行一次视觉 LLM 调用。
         context = (
             f"User request: {ctx.user_request}\n"
             f"Object: {ctx.shape_name} | new part in this image: [{part}] "

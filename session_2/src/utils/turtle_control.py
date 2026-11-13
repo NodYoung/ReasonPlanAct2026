@@ -1,11 +1,11 @@
-"""Low-level turtlesim control via ``TurtleBridge`` (not LangChain tools)."""
+"""通过 ``TurtleBridge`` 进行底层 turtlesim 控制（非 LangChain 工具）。"""
 
 from __future__ import annotations
 
 from src.utils.ros_bridge import TurtleBridge, TurtlePose
 
-# Shared turtlesim limits — import from here, do not duplicate elsewhere.
-MIN_STEP_METERS = 0.01  # smallest practical move
+# 共享的 turtlesim 限制——从这里导入，不要在别处重复定义。
+MIN_STEP_METERS = 0.01  # 实际可行的最小移动量
 DEFAULT_PEN_WIDTH = 2
 
 

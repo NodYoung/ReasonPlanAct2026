@@ -1,9 +1,9 @@
-"""Structured data shapes for LLM outputs and mission artefacts.
+"""LLM 输出与任务产物的结构化数据形态。
 
-These are JSON-friendly Pydantic schemas the LLM agents fill out
-(``ShapeBlueprint``, ``MovementPlanOutput``, ``PlanReview``) plus the
-execution artefacts they produce (``MovementPlan``, ``ExecutionReport``).
-Live runtime state lives in ``utils/mission_state.MissionContext``.
+这些是 LLM agent 填写的、对 JSON 友好的 Pydantic schema
+（``ShapeBlueprint``、``MovementPlanOutput``、``PlanReview``），外加它们
+生成的执行产物（``MovementPlan``、``ExecutionReport``）。
+运行时的实时状态位于 ``utils/mission_state.MissionContext`` 中。
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 
 
 class PenSettings(BaseModel):
-    """RGB pen color and width for drawing steps."""
+    """绘制步骤所用的 RGB 画笔颜色和宽度。"""
 
     r: int = Field(default=255, ge=0, le=255)
     g: int = Field(default=255, ge=0, le=255)
@@ -24,7 +24,7 @@ class PenSettings(BaseModel):
 
 
 class StepAction(str, Enum):
-    """One kind of turtle motion or canvas action in a movement plan."""
+    """移动计划中的一种海龟运动或画布动作。"""
 
     SET_PEN = "set_pen"
     MOVE_FORWARD = "move_forward"
@@ -35,7 +35,7 @@ class StepAction(str, Enum):
 
 
 class MovementStep(BaseModel):
-    """Single step in a movement plan (forward, rotate, pen)."""
+    """移动计划中的单个步骤（前进、旋转、画笔）。"""
 
     step_number: int = Field(ge=1)
     action: StepAction
@@ -49,8 +49,8 @@ class MovementStep(BaseModel):
 
 
 class MovementPlanOutput(BaseModel):
-    """Planner structured output — no ``starting_pose`` (injected at commit
-    time from the live turtle; some providers reject tuple schema fields)."""
+    """Planner 的结构化输出 —— 不含 ``starting_pose``（在提交时
+    从实时海龟注入；某些 provider 会拒绝元组类型的 schema 字段）。"""
 
     shape: str
     side_length: float
@@ -62,7 +62,7 @@ class MovementPlanOutput(BaseModel):
 
 
 class MovementPlan(BaseModel):
-    """Full movement plan ready for review and execution."""
+    """可供评审和执行的完整移动计划。"""
 
     shape: str
     side_length: float
@@ -72,7 +72,7 @@ class MovementPlan(BaseModel):
 
 
 class StepLog(BaseModel):
-    """Result of executing one movement step on the turtle."""
+    """在海龟上执行某一个移动步骤的结果。"""
 
     step_number: int
     action: StepAction
@@ -82,7 +82,7 @@ class StepLog(BaseModel):
 
 
 class ExecutionReport(BaseModel):
-    """What happened when the navigator ran the approved plan."""
+    """navigator 运行已批准计划时发生的情况。"""
 
     success: bool
     steps_completed: int
@@ -93,26 +93,26 @@ class ExecutionReport(BaseModel):
 
 
 class ShapeBlueprint(BaseModel):
-    """Blueprint agent output — ordered part list for the requested drawing."""
+    """Blueprint agent 的输出 —— 所请求绘图的有序部件列表。"""
 
-    shape: str = Field(description="Short snake_case name of the object to draw.")
+    shape: str = Field(description="要绘制物体的简短 snake_case 名称。")
     parts: list[str] = Field(
         min_length=1,
-        description="Ordered snake_case part names, large base parts first.",
+        description="有序的 snake_case 部件名，较大的基础部件在前。",
     )
     side_length: float = Field(
-        default=3.0, gt=0, description="Overall drawing size budget in metres."
+        default=3.0, gt=0, description="整幅绘图的尺寸预算，单位米。"
     )
 
 
 class PlanReview(BaseModel):
-    """Reviewer verdict on one trial image."""
+    """reviewer 对某一张试画图像的裁决。"""
 
     approved: bool
     feedback: str = Field(
         description=(
-            "On reject: imperative fix instructions for the planner, one concrete "
-            "action per line (e.g. 'Draw the door on the bottom edge of the body'). "
-            "On approve: one short sentence."
+            "拒绝时：给 planner 的祈使式修复说明，每行一个具体动作"
+            "（例如 'Draw the door on the bottom edge of the body'）。"
+            "批准时：一句简短的话。"
         ),
     )

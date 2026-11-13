@@ -1,4 +1,4 @@
-"""Shared state types for the outer LangGraph workflow."""
+"""外层 LangGraph 工作流的共享状态类型。"""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ NextAgent = Literal[
 
 
 class WorkflowState(TypedDict, total=False):
-    """State dictionary flowing through the outer LangGraph."""
+    """在外层 LangGraph 中流转的状态字典。"""
 
     ctx: MissionContext
     next_agent: NextAgent

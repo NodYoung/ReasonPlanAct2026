@@ -8,12 +8,12 @@
 # -----------------------------------------------------------------------------
 # [llm] — default provider + model for every agent.
 #
-# provider: gemini | openai | anthropic | ollama
+# provider: gemini | openai | anthropic | ollama | codex
 # The reviewer model must support vision (image input).
 # -----------------------------------------------------------------------------
 [llm]
-provider = "gemini"
-model = "gemini-3.1-flash-lite"
+provider = "codex"
+model = "gpt-6-astra"
 
 # Only used when provider = "ollama" (local models on your machine).
 ollama_base_url = "http://localhost:11434"

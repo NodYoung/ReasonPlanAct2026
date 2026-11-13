@@ -1,18 +1,18 @@
 """
-Dry-run a ``MovementPlan`` in software — no turtle, no ROS.
+用软件对 ``MovementPlan`` 进行试运行——没有海龟，没有 ROS。
 
-Three modules work together for "what's on the canvas?":
+有三个模块协同回答「画布上有什么？」：
 
-| Module | Role |
+| 模块 | 职责 |
 |--------|------|
-| ``path_tracker`` | **Data** — list of line segments (ink memory) |
-| ``path_simulation`` (this file) | **Predict** — walk a plan's steps in math only |
-| ``drawing_render`` | **Picture** — turn segment data into a PNG |
+| ``path_tracker`` | **数据**——线段列表（墨迹记忆） |
+| ``path_simulation``（本文件） | **预测**——仅用数学遍历计划的步骤 |
+| ``drawing_render`` | **图像**——把线段数据变成 PNG |
 
-The plan reviewer uses ``simulate_plan_to_path_tracker`` to build the
-proposed part's ink, merges it with the real ink already drawn, renders the
-trial PNG, and uses ``bbox_fits_canvas`` for the free out-of-bounds check.
-The real turtle never moves during any of this.
+计划评审者使用 ``simulate_plan_to_path_tracker`` 构建所提议部件的
+墨迹，将其与已经绘制的真实墨迹合并，渲染出试次 PNG，
+并使用 ``bbox_fits_canvas`` 进行免费的越界检查。
+在整个过程中，真实海龟从不移动。
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ def bbox_fits_canvas(
     canvas_max: float,
     margin: float,
 ) -> tuple[bool, list[str]]:
-    """Return whether a simulated bbox stays inside the canvas (with margin)."""
+    """返回一个模拟出的包围盒是否保持在画布内（含边距）。"""
     if bbox is None:
         return False, ["No pen-down ink found in plan."]
     lo = canvas_min + margin
@@ -55,7 +55,7 @@ def simulate_plan_to_path_tracker(
     plan: MovementPlan,
     start_pose: tuple[float, float, float],
 ) -> PathTracker:
-    """Dry-run a plan and build a fresh ``PathTracker`` (coloured segments)."""
+    """试运行一个计划并构建一个全新的 ``PathTracker``（带颜色的线段）。"""
     x, y, theta = start_pose
     pen_down = False
     pen_color = _DEFAULT_PEN_RGB

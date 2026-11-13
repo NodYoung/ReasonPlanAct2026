@@ -1,12 +1,11 @@
 """
-LangChain ``@tool`` definitions for the supervisor's ReAct loop.
+供 supervisor 的 ReAct 循环使用的 LangChain ``@tool`` 定义。
 
 turtle_motion_tools.py
-    Move / rotate / pen / clear / pose — one-off turtle actions.
+    移动 / 旋转 / 画笔 / 清空 / 位姿 —— 一次性的海龟动作。
 
-The ``start_drawing`` tool lives in ``agents/supervisor.py`` next to the
-agent that uses it. See ``utils/agent_runtime.py`` for how tools get the
-live bridge + mission notebook.
+``start_drawing`` 工具位于 ``agents/supervisor.py``，紧挨着使用它的 agent。
+关于工具如何获取实时桥接和任务笔记本，参见 ``utils/agent_runtime.py``。
 """
 
 __all__: list[str] = []

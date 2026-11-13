@@ -1,8 +1,8 @@
 """
-ROS 2 bridge for turtlesim.
+turtlesim 的 ROS 2 桥接层。
 
-Wraps rclpy publishers, subscribers, and services for /turtle1.
-Start turtlesim first: pixi run sim
+封装了针对 /turtle1 的 rclpy 发布者、订阅者和服务。
+请先启动 turtlesim：pixi run sim
 """
 
 from __future__ import annotations
@@ -16,18 +16,18 @@ from dataclasses import dataclass
 
 @dataclass
 class TurtlePose:
-    """Simple pose container used by tools and agents."""
+    """供工具和智能体使用的简单位姿容器。"""
 
     x: float
     y: float
-    theta: float  # radians, 0 = facing +x
+    theta: float  # 弧度，0 = 朝向 +x
 
 
 class MockTurtleSim:
     """
-    In-memory turtle simulator for learning without ROS 2 running.
+    内存中的海龟模拟器，无需运行 ROS 2 即可学习。
 
-    Mimics cmd_vel integration and pose feedback with basic kinematics.
+    用基础运动学模拟 cmd_vel 积分和位姿反馈。
     """
 
     CANVAS_MIN = 0.0
@@ -47,7 +47,7 @@ class MockTurtleSim:
         return f"Pen set to RGB({r},{g},{b}), width={width}, off={off}"
 
     def move_forward(self, distance: float, linear_speed: float = 1.0) -> str:
-        """Integrate linear motion along the turtle heading."""
+        """沿海龟朝向对线性运动进行积分。"""
         if distance <= 0:
             return "Skipped zero or negative forward distance."
 
@@ -68,10 +68,10 @@ class MockTurtleSim:
         tolerance_deg: float = 2.0,
     ) -> str:
         """
-        Rotate in place using pose feedback (closed-loop).
+        利用位姿反馈进行原地旋转（闭环）。
 
-        Keeps publishing cmd_vel until /turtle1/pose shows the requested
-        heading change — more reliable than open-loop sleep timing.
+        持续发布 cmd_vel，直到 /turtle1/pose 显示达到所请求的
+        朝向变化——比开环的 sleep 定时更可靠。
         """
         if abs(angle_degrees) < 1e-6:
             return "Skipped zero rotation."
@@ -86,7 +86,7 @@ class MockTurtleSim:
             error = self._normalize_angle(target_theta - self.theta)
             if abs(error) <= tolerance:
                 break
-            # Mock: integrate directly for simulation speed
+            # 模拟器：为了仿真速度直接进行积分
             step = min(abs(error), math.radians(5))
             self.theta = self._normalize_angle(
                 self.theta + step * (1 if error > 0 else -1)
@@ -115,7 +115,7 @@ class MockTurtleSim:
 
     @staticmethod
     def _normalize_angle(theta: float) -> float:
-        """Keep heading in [-pi, pi]."""
+        """将朝向保持在 [-pi, pi] 区间内。"""
         while theta > math.pi:
             theta -= 2 * math.pi
         while theta < -math.pi:
@@ -125,10 +125,10 @@ class MockTurtleSim:
 
 class RosTurtleNode:
     """
-    Real ROS 2 node that talks to turtlesim.
+    与 turtlesim 通信的真实 ROS 2 节点。
 
-    Spins rclpy in a background thread so LangGraph agents can call tools
-    synchronously from the main thread.
+    在后台线程中运行 rclpy，使 LangGraph 智能体可以从主线程
+    同步调用工具。
     """
 
     def __init__(self, turtle_name: str = "turtle1") -> None:
@@ -150,19 +150,19 @@ class RosTurtleNode:
         self._node = _TurtleNode("multi_agent_turtle_tools")
         self._turtle = turtle_name
 
-        # Publisher for velocity commands
+        # 速度命令的发布者
         self._cmd_pub = self._node.create_publisher(
             Twist, f"/{turtle_name}/cmd_vel", 10
         )
 
-        # Subscribe to pose feedback
+        # 订阅位姿反馈
         def _pose_callback(msg: Pose) -> None:
             with self._lock:
                 self._pose = TurtlePose(msg.x, msg.y, msg.theta)
 
         self._node.create_subscription(Pose, f"/{turtle_name}/pose", _pose_callback, 10)
 
-        # Service clients
+        # 服务客户端
         self._set_pen_client = self._node.create_client(
             SetPen, f"/{turtle_name}/set_pen"
         )
@@ -175,13 +175,20 @@ class RosTurtleNode:
         self._clear_client = self._node.create_client(Empty, "/clear")
         self._reset_client = self._node.create_client(Empty, "/reset")
 
-        # Spin ROS in the background
+        # 使用可停止的 executor 在后台运行 ROS，这样 shutdown() 可以在
+        # 销毁 node / 调用 rclpy.shutdown() 之前干净地停止 spin
+        # （裸用 rclpy.spin + rclpy.shutdown 存在竞争，会以
+        # "terminate called without an active exception" 中止进程）。
+        from rclpy.executors import SingleThreadedExecutor
+
+        self._executor = SingleThreadedExecutor()
+        self._executor.add_node(self._node)
         self._spin_thread = threading.Thread(
-            target=rclpy.spin, args=(self._node,), daemon=True
+            target=self._executor.spin, daemon=True
         )
         self._spin_thread.start()
 
-        # Wait briefly for first pose message
+        # 短暂等待第一条位姿消息
         for _ in range(50):
             if self._wait_for_pose(timeout=0.1):
                 break
@@ -191,15 +198,15 @@ class RosTurtleNode:
         return client.wait_for_service(timeout_sec=timeout_sec)
 
     def is_connected(self, timeout_sec: float = 2.0) -> bool:
-        """True when turtlesim's services are reachable (i.e. the sim is running)."""
+        """当 turtlesim 的服务可达时返回 True（即仿真正在运行）。"""
         return self._wait_for_service(self._set_pen_client, timeout_sec=timeout_sec)
 
     def _wait_for_future(self, future, timeout_sec: float = 5.0) -> None:
         """
-        Wait for an async service call while a background thread spins the node.
+        在后台线程 spin 节点期间，等待一次异步服务调用完成。
 
-        Do NOT call rclpy.spin_until_future_complete here — it conflicts with
-        the background spin thread and can hang or raise.
+        不要在这里调用 rclpy.spin_until_future_complete——它会与
+        后台的 spin 线程冲突，可能卡死或抛异常。
         """
         deadline = time.time() + timeout_sec
         while not future.done():
@@ -217,7 +224,7 @@ class RosTurtleNode:
                 if self._pose.x != 0.0 or self._pose.y != 0.0:
                     return True
             time.sleep(0.05)
-        return True  # turtlesim may legitimately start at origin in some setups
+        return True  # 在某些配置下 turtlesim 可能确实从原点开始
 
     def get_pose(self) -> TurtlePose:
         with self._lock:
@@ -238,10 +245,10 @@ class RosTurtleNode:
 
     def move_forward(self, distance: float, linear_speed: float = 1.5) -> str:
         """
-        Move forward by `distance` meters using visible cmd_vel motion.
+        利用可见的 cmd_vel 运动，向前移动 `distance` 米。
 
-        Uses closed-loop pose feedback (repeated cmd_vel publish), then a
-        small TeleportRelative snap for sub-centimeter accuracy.
+        使用闭环位姿反馈（反复发布 cmd_vel），随后用一次
+        小幅的 TeleportRelative 微调以达到亚厘米级精度。
         """
         from geometry_msgs.msg import Twist
         from turtlesim.srv import TeleportRelative
@@ -249,7 +256,7 @@ class RosTurtleNode:
         if distance <= 0:
             return "Skipped zero or negative forward distance."
 
-        # Animated closed-loop cmd_vel, then a tiny TeleportRelative snap for accuracy.
+        # 先做带动画的闭环 cmd_vel，再用一次极小的 TeleportRelative 微调以提高精度。
         start = self.get_pose()
         sx, sy = start.x, start.y
         snap_distance = min(0.08, distance * 0.05)
@@ -321,7 +328,7 @@ class RosTurtleNode:
         self._cmd_pub.publish(twist)
         time.sleep(0.05)
 
-        # Snap the final fraction of a degree for square corners.
+        # 微调最后不足一度的部分，以得到方正的拐角。
         remaining = self._angle_error(target_theta, self.get_pose().theta)
         if abs(remaining) > 0.002 and self._wait_for_service(
             self._teleport_relative_client, timeout_sec=0.5
@@ -338,7 +345,7 @@ class RosTurtleNode:
 
     @staticmethod
     def _angle_error(target: float, current: float) -> float:
-        """Shortest signed angle from current to target (radians)."""
+        """从当前朝向到目标朝向的最短有符号角度（弧度）。"""
         error = target - current
         while error > math.pi:
             error -= 2 * math.pi
@@ -383,15 +390,31 @@ class RosTurtleNode:
     def shutdown(self) -> None:
         import rclpy
 
-        self._node.destroy_node()
-        rclpy.shutdown()
+        # 1) 停止后台 spin，让 executor.spin() 返回
+        try:
+            self._executor.shutdown()
+        except Exception:
+            pass
+        # 2) 等后台线程真正退出（带超时）
+        if self._spin_thread.is_alive():
+            self._spin_thread.join(timeout=2.0)
+        # 3) 销毁 node + 关闭 rclpy（保护，避免重复/竞争导致 abort）
+        try:
+            self._node.destroy_node()
+        except Exception:
+            pass
+        try:
+            if rclpy.ok():
+                rclpy.shutdown()
+        except Exception:
+            pass
 
 
 class TurtleBridge:
     """
-    Factory that picks ROS or mock backend.
+    在 ROS 后端与模拟后端之间进行选择的工厂。
 
-    Call get_turtle_bridge() once at startup and pass the instance to tools.
+    启动时调用一次 get_turtle_bridge()，并将返回的实例传给工具。
     """
 
     def __init__(self, use_mock: bool = False, turtle_name: str = "turtle1") -> None:
@@ -411,7 +434,7 @@ class TurtleBridge:
         return self._use_mock
 
     def is_connected(self) -> bool:
-        """True when the live turtlesim node is reachable (always True for mock)."""
+        """当实时 turtlesim 节点可达时返回 True（模拟模式始终为 True）。"""
         if isinstance(self._backend, RosTurtleNode):
             return self._backend.is_connected()
         return True
@@ -420,7 +443,7 @@ class TurtleBridge:
         return self._backend.get_pose()
 
     def get_pen_state(self) -> dict[str, int | bool]:
-        """Last known pen colour, width, and on/off (updated on each set_pen)."""
+        """最近一次已知的画笔颜色、宽度和开/关状态（每次 set_pen 时更新）。"""
         pen = getattr(self._backend, "pen", None)
         if pen is None:
             return {"r": 255, "g": 255, "b": 255, "width": 2, "off": False}
@@ -450,5 +473,5 @@ class TurtleBridge:
 
 
 def get_turtle_bridge(turtle_name: str = "turtle1") -> TurtleBridge:
-    """Connect to the live turtlesim node (run `pixi run sim` first)."""
+    """连接到实时的 turtlesim 节点（请先运行 `pixi run sim`）。"""
     return TurtleBridge(use_mock=False, turtle_name=turtle_name)

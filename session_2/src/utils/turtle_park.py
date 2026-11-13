@@ -1,4 +1,4 @@
-"""Move the turtle out of the way so the finished drawing is easy to see."""
+"""把海龟移开，让画好的图更容易被看清。"""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ def park_turtle_for_clear_view(
     path_tracker: PathTracker | None = None,
 ) -> str:
     """
-    Pen up and teleport to the canvas corner farthest from the drawing centre.
+    抬笔并瞬移到离绘图中心最远的画布角落。
     """
     set_pen_color(bridge, 255, 255, 255, 2, off=True)
 

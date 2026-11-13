@@ -1,7 +1,7 @@
-"""Turtlesim canvas constants — the world is an 11×11 metre square.
+"""Turtlesim 画布常量——世界是一个 11×11 米的正方形。
 
-Used by the renderer (``drawing_render``), the reviewer's bounds check
-(via ``path_simulation.bbox_fits_canvas``), and turtle parking.
+由渲染器（``drawing_render``）、评审者的边界检查
+（通过 ``path_simulation.bbox_fits_canvas``）以及海龟停靠使用。
 """
 
 from __future__ import annotations

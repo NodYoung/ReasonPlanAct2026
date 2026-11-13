@@ -1,15 +1,15 @@
 """
-LangGraph wiring + ``run_mission`` — hub-and-spoke around the supervisor.
+LangGraph 接线 + ``run_mission`` —— 围绕 supervisor 的中心辐射式结构。
 
-    user message → supervisor ──(simple task / question)──→ END
+    user message → supervisor ──(简单任务 / 问题)──────→ END
                         │
                         ├→ planner_blueprint ─┐
-                        ├→ planner_part ──────┤   every specialist
-                        ├→ plan_reviewer ─────┼── returns to the
+                        ├→ planner_part ──────┤   每个专职 agent
+                        ├→ plan_reviewer ─────┼── 都会返回到
                         └→ navigator ─────────┘   supervisor
 
-The supervisor is the only orchestrator: one ReAct LLM turn on the first
-visit, then deterministic routing through the drawing pipeline on revisits.
+supervisor 是唯一的编排者：首次访问时执行一轮 ReAct LLM，
+之后在再次访问时按确定性规则在绘图流水线中进行路由。
 """
 
 from __future__ import annotations
@@ -21,13 +21,13 @@ from src.utils.mission_state import MissionContext
 from src.utils.ros_bridge import TurtleBridge
 from src.workflow.types import WorkflowState
 
-# Outer graph step budget: every part costs a handful of node visits, replans
-# add more — keep generous headroom for multi-part drawings.
+# 外层图的步数预算：每个部件都会消耗若干次节点访问，重新规划
+# 会消耗更多 —— 为多部件绘图保留充裕的余量。
 RECURSION_LIMIT = 200
 
 
 def build_workflow(bridge: TurtleBridge) -> StateGraph:
-    """Construct the multi-agent StateGraph."""
+    """构建这个多 agent 的 StateGraph。"""
     graph = StateGraph(WorkflowState)
 
     graph.add_node("supervisor", supervisor.build_graph_node(bridge))
@@ -55,7 +55,7 @@ def build_workflow(bridge: TurtleBridge) -> StateGraph:
 
 
 def run_mission(user_request: str, bridge: TurtleBridge) -> bool:
-    """Run one user request end-to-end; return True unless the mission failed."""
+    """端到端地运行一个用户请求；除非任务失败，否则返回 True。"""
     ctx = MissionContext(user_request=user_request)
     build_workflow(bridge).compile().invoke(
         {"ctx": ctx}, config={"recursion_limit": RECURSION_LIMIT}

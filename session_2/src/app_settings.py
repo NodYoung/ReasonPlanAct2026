@@ -1,15 +1,15 @@
 """
-Application settings loaded from ``config.toml`` (+ select env overrides).
+从 ``config.toml`` 加载应用设置（外加部分环境变量覆盖）。
 
-Behaviour knobs live in ``config.toml``; secrets stay in ``.env``.
-``load_config()`` is called once at process start (``main.py``); later code
-uses ``get_config()`` for a frozen snapshot.
+行为相关的开关放在 ``config.toml`` 中；密钥保存在 ``.env`` 中。
+``load_config()`` 在进程启动时调用一次（``main.py``）；后续代码
+使用 ``get_config()`` 获取一份冻结的快照。
 
-``[llm]`` sets the default provider/model for every agent. Optional
+``[llm]`` 为每个 agent 设置默认的 provider/model。可选的
 ``[llm.supervisor]`` / ``[llm.blueprint]`` / ``[llm.planner]`` /
-``[llm.reviewer]`` tables override provider and/or model per agent.
+``[llm.reviewer]`` 表可按 agent 覆盖 provider 和/或 model。
 
-``APP_CONFIG`` env var can point at an alternate TOML path (useful in tests).
+``APP_CONFIG`` 环境变量可以指向另一个 TOML 路径（在测试中很有用）。
 """
 
 from __future__ import annotations
@@ -22,10 +22,10 @@ from typing import Literal
 
 from dotenv import load_dotenv
 
-LlmProvider = Literal["gemini", "openai", "anthropic", "ollama"]
+LlmProvider = Literal["gemini", "openai", "anthropic", "ollama", "codex"]
 FailAction = Literal["skip", "draw_anyway"]
 
-PROVIDERS = ("gemini", "openai", "anthropic", "ollama")
+PROVIDERS = ("gemini", "openai", "anthropic", "ollama", "codex")
 LLM_AGENT_ROLES = ("supervisor", "blueprint", "planner", "reviewer")
 
 _CONFIG_PATH = Path(os.getenv("APP_CONFIG", "config.toml"))
@@ -33,7 +33,7 @@ _CONFIG_PATH = Path(os.getenv("APP_CONFIG", "config.toml"))
 
 @dataclass(frozen=True)
 class LlmConfig:
-    """Provider + model for one agent (or the default for all agents)."""
+    """某个 agent 的 provider + model（或所有 agent 的默认值）。"""
 
     provider: LlmProvider
     model: str
@@ -42,7 +42,7 @@ class LlmConfig:
 
 @dataclass(frozen=True)
 class ReviewConfig:
-    """Pre-draw plan review loop (trial image + vision check)."""
+    """绘制前的计划评审循环（试画图像 + 视觉检查）。"""
 
     enabled: bool
     max_trials: int
@@ -51,7 +51,7 @@ class ReviewConfig:
 
 @dataclass(frozen=True)
 class AppConfig:
-    """Frozen bag of all sections from ``config.toml`` (+ env overlays)."""
+    """来自 ``config.toml`` 的所有配置段的冻结集合（外加环境变量叠加）。"""
 
     llm: LlmConfig
     llm_agents: dict[str, LlmConfig] = field(default_factory=dict)
@@ -59,7 +59,7 @@ class AppConfig:
     park_after_draw: bool = True
 
     def llm_for(self, agent: str) -> LlmConfig:
-        """LLM config for ``agent`` (supervisor/blueprint/planner/reviewer)."""
+        """返回 ``agent`` 的 LLM 配置（supervisor/blueprint/planner/reviewer）。"""
         return self.llm_agents.get(agent, self.llm)
 
 
@@ -96,7 +96,7 @@ def _load_toml() -> dict:
 
 
 def load_config(*, reload: bool = False) -> AppConfig:
-    """Load and cache ``AppConfig``. Pass ``reload=True`` to re-read the file."""
+    """加载并缓存 ``AppConfig``。传入 ``reload=True`` 可重新读取文件。"""
     global _config
     if _config is not None and not reload:
         return _config
@@ -112,7 +112,7 @@ def load_config(*, reload: bool = False) -> AppConfig:
     ollama_url = str(llm.get("ollama_base_url", "http://localhost:11434"))
     default = LlmConfig(provider=provider, model=model, ollama_base_url=ollama_url)
 
-    # Per-agent overrides: [llm.supervisor], [llm.blueprint], ... fall back to [llm].
+    # 按 agent 覆盖：[llm.supervisor]、[llm.blueprint]、…… 回退到 [llm]。
     agents: dict[str, LlmConfig] = {}
     for role in LLM_AGENT_ROLES:
         section = llm.get(role)
@@ -149,5 +149,5 @@ def load_config(*, reload: bool = False) -> AppConfig:
 
 
 def get_config() -> AppConfig:
-    """Return the cached config, loading it on first use if needed."""
+    """返回缓存的配置，必要时在首次使用时加载它。"""
     return _config if _config is not None else load_config()

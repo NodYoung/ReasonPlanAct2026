@@ -1,37 +1,37 @@
 """
-Turn ``PathTracker`` segment data into PNG images.
+把 ``PathTracker`` 的线段数据变成 PNG 图像。
 
-## Overview
+## 概述
 
-Turtlesim has no screenshot API. Agents still need **pictures** of the canvas
-for plan review, planner context, and saved captures.
+Turtlesim 没有截图 API。但智能体仍然需要画布的**图像**，
+用于计划评审、规划器上下文和已保存的截图。
 
-This module is the **renderer only**:
+本模块**仅是渲染器**：
 
-1. Input — a ``PathTracker`` (segment list: start/end points, colour, width)
-2. Output — PNG bytes (blue background, grid, lines, optional turtle dot)
+1. 输入——一个 ``PathTracker``（线段列表：起点/终点、颜色、宽度）
+2. 输出——PNG 字节（蓝色背景、网格、线条、可选的海龟圆点）
 
-It does **not** execute movement plans. Something else must fill the tracker first:
+它**不**执行移动计划。必须先由其他东西填充该 tracker：
 
-| Ink source | How segments get there |
+| 墨迹来源 | 线段如何进来 |
 |------------|-------------------------|
-| Real drawing | Navigator runs steps → ``plan_execution`` updates ``MissionContext.path_tracker`` |
-| Preview / what-if | ``path_simulation.simulate_plan_to_path_tracker`` builds a temporary tracker |
+| 真实绘制 | 导航员运行步骤 → ``plan_execution`` 更新 ``MissionContext.path_tracker`` |
+| 预览 / 假设推演 | ``path_simulation.simulate_plan_to_path_tracker`` 构建一个临时 tracker |
 
-## Typical pipeline (plan review)
+## 典型流程（计划评审）
 
 ::
 
     simulate_plan_to_path_tracker(new_part_plan)   # path_simulation
-    merge with ctx.path_tracker                    # existing ink
-    render_drawing(merged)                         # this file → PNG
-    save as captures/{shape}_{part}_trial{N}.png   # reviewer looks at it
+    merge with ctx.path_tracker                    # 已有墨迹
+    render_drawing(merged)                          # 本文件 → PNG
+    save as captures/{shape}_{part}_trial{N}.png   # 评审者查看它
 
-## Main functions
+## 主要函数
 
-- ``render_path_to_image`` / ``render_drawing`` — segments → PNG bytes
-- ``save_image`` — write bytes to ``captures/`` (or any path)
-- ``png_path_to_data_url`` — read a saved PNG for vision-model messages
+- ``render_path_to_image`` / ``render_drawing`` —— 线段 → PNG 字节
+- ``save_image`` —— 将字节写入 ``captures/``（或任意路径）
+- ``png_path_to_data_url`` —— 读取已保存的 PNG，供视觉模型消息使用
 """
 
 from __future__ import annotations
@@ -71,11 +71,11 @@ def render_path_to_image(
     margin_px: int = 20,
 ) -> bytes:
     """
-    Draw all pen-down segments onto a turtlesim-style PNG.
+    将所有落笔线段绘制到一张 turtlesim 风格的 PNG 上。
 
-    ``path`` usually comes from ``MissionContext.path_tracker`` (real ink) or
-    from ``path_simulation`` (simulated preview). Optional ``turtle_pose`` adds
-    an orange dot for the turtle position.
+    ``path`` 通常来自 ``MissionContext.path_tracker``（真实墨迹）或
+    来自 ``path_simulation``（模拟预览）。可选的 ``turtle_pose`` 会为海龟
+    位置添加一个橙色圆点。
     """
     from PIL import Image, ImageDraw
 
@@ -116,7 +116,7 @@ def render_path_to_image(
 
 
 def save_image(png_bytes: bytes, path: str | Path) -> Path:
-    """Write PNG bytes to disk (creates parent folders if needed)."""
+    """将 PNG 字节写入磁盘（如有需要会创建父文件夹）。"""
     out = Path(path)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_bytes(png_bytes)
@@ -124,7 +124,7 @@ def save_image(png_bytes: bytes, path: str | Path) -> Path:
 
 
 def png_path_to_data_url(path: str | Path) -> str | None:
-    """Read a PNG file and return a data URL for vision-capable chat models."""
+    """读取一个 PNG 文件，并返回供支持视觉的聊天模型使用的 data URL。"""
     p = Path(path)
     if not p.is_file():
         return None
@@ -137,5 +137,5 @@ def render_drawing(
     *,
     turtle_pose: tuple[float, float, float] | None = None,
 ) -> bytes:
-    """Convenience wrapper: ``PathTracker`` → PNG bytes (default image size)."""
+    """便捷封装：``PathTracker`` → PNG 字节（使用默认图像尺寸）。"""
     return render_path_to_image(path, turtle_pose=turtle_pose)

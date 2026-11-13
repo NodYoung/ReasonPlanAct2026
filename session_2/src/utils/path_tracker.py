@@ -1,36 +1,35 @@
 """
-Record what the turtle has drawn — the app's memory of ink on the canvas.
+记录海龟已经绘制的内容——应用对画布上墨迹的记忆。
 
-## Overview
+## 概述
 
-Turtlesim tells us the turtle's **pose** (x, y, heading) and pen commands.
-It does **not** give us a screenshot or a list of lines already on the canvas.
+Turtlesim 告诉我们海龟的**位姿**（x、y、朝向）和画笔命令。
+它**不会**给我们截图，也不会给出画布上已有线条的列表。
 
-``PathTracker`` rebuilds that picture ourselves: every time the pen is down and
-the turtle moves, we store one straight **line segment** (start point, end point,
-colour, width).
+``PathTracker`` 由我们自己重建那幅图像：每当画笔落下且海龟移动时，
+我们就存储一条直的**线段**（起点、终点、颜色、宽度）。
 
-Think of it as a sketchbook layer that grows during the mission:
+可以把它看作任务期间不断增长的草图本图层：
 
-- Navigator draws on the real turtle → segments are appended here
-- Plan simulation (dry-run) → builds a temporary ``PathTracker`` the same way
-- PNG previews, plan review, planner context → all read from segment lists
+- 导航员在真实海龟上绘制 → 线段被追加到这里
+- 计划仿真（试运行）→ 以同样方式构建一个临时的 ``PathTracker``
+- PNG 预览、计划评审、规划器上下文 → 全都从线段列表读取
 
-One ``PathTracker`` lives on ``MissionContext.path_tracker`` for the whole
-mission. It accumulates ink across parts (body, then head, then ears, …).
+整个任务期间，``MissionContext.path_tracker`` 上存在一个 ``PathTracker``。
+它跨部件累积墨迹（机身、然后头部、然后耳朵……）。
 
-## Why this is necessary
+## 为什么这是必要的
 
-Without it, agents would only know *where the turtle is now*, not *what is
-already drawn*. Multi-part shapes need the second thing — e.g. placing ears on
-the head requires knowing where the head lines are.
+没有它，智能体只会知道*海龟现在在哪里*，而不知道*已经画了什么*。
+多部件形状需要后者——例如，在头部上放置耳朵
+需要知道头部线条在哪里。
 
-## Main types
+## 主要类型
 
-- ``PathPoint`` — one (x, y) coordinate in metres
-- ``PathSegment`` — one pen-down stroke (line from A to B)
-- ``PathTracker`` — list of segments + current pen state; updated by
-  ``plan_execution.execute_plan_deterministic`` and ``path_simulation``
+- ``PathPoint`` —— 一个以米为单位的 (x, y) 坐标
+- ``PathSegment`` —— 一条落笔笔画（从 A 到 B 的线段）
+- ``PathTracker`` —— 线段列表 + 当前画笔状态；由
+  ``plan_execution.execute_plan_deterministic`` 和 ``path_simulation`` 更新
 """
 
 from __future__ import annotations
@@ -43,7 +42,7 @@ _DEFAULT_PEN_RGB = (255, 255, 255)
 
 @dataclass
 class PathPoint:
-    """A single point on the 11×11 m canvas (world coordinates)."""
+    """11×11 米画布上的单个点（世界坐标）。"""
 
     x: float
     y: float
@@ -51,7 +50,7 @@ class PathPoint:
 
 @dataclass
 class PathSegment:
-    """One pen-down stroke: a straight line from ``start`` to ``end``."""
+    """一条落笔笔画：从 ``start`` 到 ``end`` 的直线。"""
 
     start: PathPoint
     end: PathPoint
@@ -64,10 +63,10 @@ class PathSegment:
 @dataclass
 class PathTracker:
     """
-    Running log of pen-down ink for one mission.
+    单个任务的落笔墨迹运行日志。
 
-    Updated as steps execute (or simulate). Use ``segments`` for rendering
-    PNGs, bounding-box checks, and “what's already on the canvas?” context.
+    随步骤执行（或仿真）而更新。使用 ``segments`` 来渲染
+    PNG、进行包围盒检查，以及提供「画布上已有什么？」的上下文。
     """
 
     pen_down: bool = False
@@ -77,7 +76,7 @@ class PathTracker:
     _pen_width: int = 2
 
     def set_pen(self, r: int, g: int, b: int, width: int = 2, *, off: bool = False) -> None:
-        """Update active pen colour/width and pen-down state."""
+        """更新当前画笔的颜色/宽度以及落笔状态。"""
         self._pen_color = (r, g, b)
         self._pen_width = width
         self.pen_down = not off
@@ -85,13 +84,13 @@ class PathTracker:
             self._last_point = None
 
     def set_pen_down(self, down: bool) -> None:
-        """Legacy toggle — prefer set_pen() to retain colour."""
+        """遗留的开关——优先使用 set_pen() 以保留颜色。"""
         self.pen_down = down
         if not down:
             self._last_point = None
 
     def mark_pose(self, x: float, y: float) -> None:
-        """Call after each movement while pen is down."""
+        """在画笔落下期间每次移动后调用。"""
         if not self.pen_down:
             return
         point = PathPoint(x=x, y=y)
@@ -110,14 +109,14 @@ class PathTracker:
         self._last_point = point
 
     def start_segment(self, x: float, y: float, requested_distance: float | None) -> None:
-        """Begin tracking a forward move from (x, y)."""
+        """开始追踪从 (x, y) 起的一次前进移动。"""
         if not self.pen_down:
             return
         self._last_point = PathPoint(x=x, y=y)
         self._pending_requested = requested_distance
 
     def finish_segment(self, x: float, y: float) -> float:
-        """End forward move at (x, y); return actual distance traveled."""
+        """在 (x, y) 处结束前进移动；返回实际行进距离。"""
         if not self.pen_down or self._last_point is None:
             return 0.0
         end = PathPoint(x=x, y=y)
@@ -135,7 +134,7 @@ class PathTracker:
         return dist
 
     def clear(self) -> None:
-        """Drop all segments and reset pen state (e.g. new mission)."""
+        """丢弃所有线段并重置画笔状态（例如开始新任务）。"""
 
         self.segments.clear()
         self._last_point = None
@@ -144,7 +143,7 @@ class PathTracker:
         self._pen_width = 2
 
     def bounding_box(self) -> dict[str, float] | None:
-        """Axis-aligned box around all ink, or ``None`` if the canvas is empty."""
+        """围绕所有墨迹的轴对齐包围盒，若画布为空则返回 ``None``。"""
 
         if not self.segments:
             return None
@@ -160,6 +159,6 @@ class PathTracker:
         }
 
     def measured_side_lengths(self) -> list[float]:
-        """Length of each drawn segment in metres (for sanity checks / logging)."""
+        """每条已绘制线段的长度（米）（用于合理性检查 / 日志记录）。"""
 
         return [round(s.actual_distance, 3) for s in self.segments if s.actual_distance > 1e-3]

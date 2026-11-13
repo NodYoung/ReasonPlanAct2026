@@ -1,5 +1,7 @@
 # Multi-Agent Turtlesim
 
+[中文版](README.zh.md)
+
 This project contains a LangGraph multi-agent pipeline that draws shapes on ROS 2 turtlesim using configurable LLM/VLM providers (Gemini, OpenAI, Anthropic, or Ollama) with **one supervisor agent** orchestrating a small set of specialists agents.
 
 ## Setup

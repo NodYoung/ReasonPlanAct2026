@@ -1,0 +1,98 @@
+(base) robot@liyanan10:~/github/llm-misc/ReasonPlanAct2026/session_2$ python -m src.main
+[sim_launcher.py:128] [sim_launcher] 正在启动全新的 turtlesim_node ...
+[sim_launcher.py:158] [sim_launcher] turtlesim 已就绪。
+[main.py:53] Connected to turtlesim (/turtle1) — the turtle just spun to say hi.
+[main.py:56] LLM: default: codex/gpt-6-astra
+
+[main.py:64] Multi-Agent Turtlesim — shapes, moves, or questions. Type 'quit' to exit.
+
+[main.py:65] Examples:
+[main.py:66]   Draw a house.
+[main.py:67]   Move forward 0.1
+[main.py:68]   Set pen to red
+
+User: 画一个房子
+[mission_state.py:76] Supervisor: 开始绘制一座带三角屋顶、门和窗户的房子。
+[mission_state.py:76] Supervisor: [Blueprint] house: house_body → roof → door → window (≈4 m).
+[mission_state.py:76] Supervisor: [Planner] Part [house_body] plan ready: 12 steps (trial 1).
+[mission_state.py:76] Supervisor: [Reviewer] Trial image saved: captures/house_house_body_trial1.png
+[mission_state.py:76] Supervisor: [Reviewer] Part [house_body] trial 1 approved. The centered rectangular house body is a reasonable first step, with room for the roof above and the door and window on the front.
+[plan_execution.py:85]   [Exec] step 1: set_pen RGB(0,0,0)
+[plan_execution.py:130]   [Exec] step 2: rotate 180.0°
+[plan_execution.py:118]   [Exec] step 3: move_forward 2.0 m
+[plan_execution.py:130]   [Exec] step 4: rotate 180.0°
+[plan_execution.py:85]   [Exec] step 5: set_pen RGB(0,0,0)
+[plan_execution.py:118]   [Exec] step 6: move_forward 4.0 m
+[plan_execution.py:130]   [Exec] step 7: rotate 90.0°
+[plan_execution.py:118]   [Exec] step 8: move_forward 4.0 m
+[plan_execution.py:130]   [Exec] step 9: rotate 90.0°
+[plan_execution.py:118]   [Exec] step 10: move_forward 4.0 m
+[plan_execution.py:130]   [Exec] step 11: rotate 90.0°
+[plan_execution.py:118]   [Exec] step 12: move_forward 4.0 m
+[mission_state.py:76] Supervisor: [Navigator] Part [house_body]: 12/12 steps executed.
+[mission_state.py:76] Supervisor: Part [house_body] drawn (1/4).
+[mission_state.py:76] Supervisor: [Planner] Part [roof] plan ready: 9 steps (trial 1).
+[mission_state.py:76] Supervisor: [Reviewer] Trial image saved: captures/house_roof_trial1.png
+[mission_state.py:76] Supervisor: [Reviewer] Part [roof] trial 1 rejected: Plan goes off-canvas: Drawing extends past top edge (max y=10.80 m). Keep all ink inside 0.25-10.75 m — use shorter strokes or reposition (pen up) toward the canvas centre first.
+[mission_state.py:76] Supervisor: [Planner] Part [roof] plan ready: 8 steps (trial 2).
+[mission_state.py:76] Supervisor: [Reviewer] Trial image saved: captures/house_roof_trial2.png
+[mission_state.py:76] Supervisor: [Reviewer] Part [roof] trial 2 approved. 屋顶已正确连接在房屋主体顶部，比例和朝向合理。
+[plan_execution.py:85]   [Exec] step 1: set_pen RGB(0,0,0)
+[plan_execution.py:130]   [Exec] step 2: rotate 180.0°
+[plan_execution.py:118]   [Exec] step 3: move_forward 4.0 m
+[plan_execution.py:85]   [Exec] step 4: set_pen RGB(0,0,0)
+[plan_execution.py:130]   [Exec] step 5: rotate -66.77°
+[plan_execution.py:118]   [Exec] step 6: move_forward 2.177 m
+[plan_execution.py:130]   [Exec] step 7: rotate -46.46°
+[plan_execution.py:118]   [Exec] step 8: move_forward 2.177 m
+[mission_state.py:76] Supervisor: [Navigator] Part [roof]: 8/8 steps executed.
+[mission_state.py:76] Supervisor: Part [roof] drawn (2/4).
+[mission_state.py:76] Supervisor: [Planner] Part [door] plan ready: 12 steps (trial 1).
+[mission_state.py:76] Supervisor: [Reviewer] Trial image saved: captures/house_door_trial1.png
+[mission_state.py:76] Supervisor: [Reviewer] Part [door] trial 1 approved. 门位于房屋主体底部中央，与底边衔接良好，整体房屋轮廓清晰。
+[plan_execution.py:85]   [Exec] step 1: set_pen RGB(0,0,0)
+[plan_execution.py:130]   [Exec] step 2: rotate -96.75°
+[plan_execution.py:118]   [Exec] step 3: move_forward 4.965 m
+[plan_execution.py:130]   [Exec] step 4: rotate 210.25°
+[plan_execution.py:85]   [Exec] step 5: set_pen RGB(0,0,0)
+[plan_execution.py:118]   [Exec] step 6: move_forward 1.5 m
+[plan_execution.py:130]   [Exec] step 7: rotate -90.0°
+[plan_execution.py:118]   [Exec] step 8: move_forward 0.95 m
+[plan_execution.py:130]   [Exec] step 9: rotate -90.0°
+[plan_execution.py:118]   [Exec] step 10: move_forward 1.5 m
+[plan_execution.py:130]   [Exec] step 11: rotate -90.0°
+[plan_execution.py:118]   [Exec] step 12: move_forward 0.95 m
+[mission_state.py:76] Supervisor: [Navigator] Part [door]: 12/12 steps executed.
+[mission_state.py:76] Supervisor: Part [door] drawn (3/4).
+[mission_state.py:76] Supervisor: [Planner] Part [window] plan ready: 14 steps (trial 1).
+[mission_state.py:76] Supervisor: [Reviewer] Trial image saved: captures/house_window_trial1.png
+[mission_state.py:76] Supervisor: [Reviewer] Part [window] trial 1 rejected: Move the window onto an empty section of the house wall, separate from the door.
+Keep the window entirely inside the house body and above the bottom edge.
+Redraw the window as a clean rectangle without overlapping or extending below the door.
+[mission_state.py:76] Supervisor: [Planner] Part [window] plan ready: 14 steps (trial 2).
+[mission_state.py:76] Supervisor: [Reviewer] Trial image saved: captures/house_window_trial2.png
+[mission_state.py:76] Supervisor: [Reviewer] Part [window] trial 2 rejected: 将新增窗户移到房屋主体的左侧或右侧墙面上，避开中央的门。
+把窗户完整画在主体矩形内部，并与墙体边界保持连接。
+[mission_state.py:76] Supervisor: [Planner] Part [window] plan ready: 13 steps (trial 3).
+[mission_state.py:76] Supervisor: [Reviewer] Trial image saved: captures/house_window_trial3.png
+[mission_state.py:76] Supervisor: [Reviewer] Part [window] trial 3 rejected: 将左下方漂浮的窗户移到房屋主体的左侧墙面内，并与墙体边界衔接。
+把窗户放置在屋身下半部、门的左侧区域，保持窗户完全位于主体轮廓内。
+[mission_state.py:76] Supervisor: [Planner] Part [window] plan ready: 12 steps (trial 4).
+[mission_state.py:76] Supervisor: [Reviewer] Trial image saved: captures/house_window_trial4.png
+[mission_state.py:76] Supervisor: [Reviewer] Part [window] trial 4 approved. The window is properly placed on the left side of the house body and the overall house remains recognizable.
+[plan_execution.py:85]   [Exec] step 1: set_pen RGB(0,0,0)
+[plan_execution.py:130]   [Exec] step 2: rotate 327.8°
+[plan_execution.py:118]   [Exec] step 3: move_forward 1.31 m
+[plan_execution.py:130]   [Exec] step 4: rotate 212.2°
+[plan_execution.py:85]   [Exec] step 5: set_pen RGB(0,0,0)
+[plan_execution.py:118]   [Exec] step 6: move_forward 0.75 m
+[plan_execution.py:130]   [Exec] step 7: rotate 90.0°
+[plan_execution.py:118]   [Exec] step 8: move_forward 0.75 m
+[plan_execution.py:130]   [Exec] step 9: rotate 90.0°
+[plan_execution.py:118]   [Exec] step 10: move_forward 0.75 m
+[plan_execution.py:130]   [Exec] step 11: rotate 90.0°
+[plan_execution.py:118]   [Exec] step 12: move_forward 0.75 m
+[mission_state.py:76] Supervisor: [Navigator] Part [window]: 12/12 steps executed.
+[mission_state.py:76] Supervisor: Part [window] drawn (4/4).
+[mission_state.py:76] Supervisor: Turtle parked at (0.5, 0.5) pen up — drawing should be fully visible.
+[mission_state.py:76] Supervisor: Drawing complete: house_body, roof, door, window.

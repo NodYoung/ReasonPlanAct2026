@@ -1,10 +1,10 @@
 """
-Visualize the LangGraph workflow as a Mermaid diagram.
+将 LangGraph 工作流可视化为 Mermaid 图。
 
-Prints the Mermaid source to the terminal and saves it to
-``docs/workflow_graph.md`` (renders on GitHub / in the IDE markdown preview).
+把 Mermaid 源码打印到终端，并保存到
+``docs/workflow_graph.md``（在 GitHub / IDE 的 markdown 预览中渲染）。
 
-Run:  pixi run graph
+运行：  pixi run graph
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from src.workflow import build_workflow
 
 
 def main() -> None:
-    # Mock backend — no ROS / turtlesim needed just to draw the graph.
+    # Mock 后端 —— 仅为绘制图而无需 ROS / turtlesim。
     graph = build_workflow(TurtleBridge(use_mock=True)).compile().get_graph()
     mermaid = graph.draw_mermaid()
 

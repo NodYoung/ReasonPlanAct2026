@@ -1,10 +1,10 @@
 """
-Navigator — deterministic turtle execution (no LLM).
+Navigator（导航器）—— 确定性的海龟执行（不使用 LLM）。
 
-Once a part's plan is approved, every step is already known; an LLM would be
-slow and unreliable here. This node walks ``ctx.movement_plan`` on the real
-turtle (set_pen / move_forward / rotate via the ROS bridge), records ink on
-``ctx.path_tracker``, and flags the result for the supervisor's bookkeeping.
+一旦某个部件的计划获批，每一步都已经确定；在这里使用 LLM 会既慢又不可靠。
+本节点在真实海龟上逐步执行 ``ctx.movement_plan``（通过 ROS 桥接调用
+set_pen / move_forward / rotate），在 ``ctx.path_tracker`` 上记录墨迹，
+并将结果标记出来供 supervisor 记账。
 """
 
 from __future__ import annotations

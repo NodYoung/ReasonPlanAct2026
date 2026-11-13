@@ -1,12 +1,12 @@
 """
-Build LangChain chat models per agent — Gemini / OpenAI / Anthropic / Ollama.
+为每个 agent 构建 LangChain 聊天模型 —— Gemini / OpenAI / Anthropic / Ollama。
 
-``get_llm("supervisor")`` returns a chat model for that agent using its
-``[llm.<agent>]`` override from ``config.toml``, falling back to ``[llm]``.
-API keys come from ``.env`` (see ``.env.example``); Ollama needs no key.
+``get_llm("supervisor")`` 返回该 agent 的聊天模型，使用其在
+``config.toml`` 中的 ``[llm.<agent>]`` 覆盖配置，若无则回退到 ``[llm]``。
+API 密钥来自 ``.env``（参见 ``.env.example``）；Ollama 无需密钥。
 
-Sampling parameters are left at provider defaults — current model families
-(Gemini 3.x, GPT-5.x, Claude 5) recommend default temperature.
+采样参数保持 provider 的默认值 —— 当前的模型家族
+（Gemini 3.x、GPT-5.x、Claude 5）推荐使用默认 temperature。
 """
 
 from __future__ import annotations
@@ -23,27 +23,40 @@ _API_KEY_ENV: dict[str, tuple[str, ...]] = {
     "openai": ("OPENAI_API_KEY",),
     "anthropic": ("ANTHROPIC_API_KEY",),
     "ollama": (),
+    # codex：路由器密钥来自环境变量 OPENAI_API_KEY 或 ~/.codex/auth.json
+    "codex": ("OPENAI_API_KEY",),
 }
 
 
 def get_api_key(provider: LlmProvider) -> str | None:
-    """Return the API key for ``provider`` from the environment, if any."""
+    """从环境中返回 ``provider`` 的 API 密钥（如果有的话）。"""
     for env_name in _API_KEY_ENV[provider]:
         value = os.getenv(env_name)
         if value:
             return value
+    if provider == "codex":
+        # codex 密钥可能只存在于 ~/.codex/auth.json 中（不在环境变量里）
+        from src.codex_backend import load_codex_settings
+
+        try:
+            key, _model, _base = load_codex_settings()
+            return key
+        except Exception:
+            return None
     return None
 
 
 def api_key_hint(provider: LlmProvider) -> str:
-    """One-line fix hint for missing credentials."""
+    """缺少凭据时的一行修复提示。"""
     if provider == "ollama":
         return f"Start Ollama locally ({get_config().llm.ollama_base_url})"
+    if provider == "codex":
+        return "Set OPENAI_API_KEY in .env/env or provide ~/.codex/auth.json"
     return f"Set {' or '.join(_API_KEY_ENV[provider])} in .env"
 
 
 def missing_providers() -> list[LlmProvider]:
-    """Providers used by any agent that have no API key configured."""
+    """任意 agent 使用到的、但未配置 API 密钥的 provider。"""
     cfg = get_config()
     used = {cfg.llm.provider} | {cfg.llm_for(role).provider for role in LLM_AGENT_ROLES}
     return [p for p in sorted(used) if p != "ollama" and not get_api_key(p)]
@@ -74,17 +87,21 @@ def _build_model(provider: LlmProvider, model: str, ollama_base_url: str) -> Bas
         from langchain_ollama import ChatOllama
 
         return ChatOllama(model=model, base_url=ollama_base_url)
+    if provider == "codex":
+        from src.codex_backend import build_codex_model
+
+        return build_codex_model(model)
     raise ValueError(f"Unknown LLM provider: {provider!r}")
 
 
 def get_llm(agent: str = "supervisor") -> BaseChatModel:
-    """Chat model for ``agent`` (supervisor / blueprint / planner / reviewer)."""
+    """``agent``（supervisor / blueprint / planner / reviewer）的聊天模型。"""
     cfg: LlmConfig = get_config().llm_for(agent)
     return _build_model(cfg.provider, cfg.model, cfg.ollama_base_url)
 
 
 def describe_models() -> str:
-    """Short human-readable summary of which model each agent uses."""
+    """简短、便于人类阅读的摘要，说明每个 agent 使用哪个模型。"""
     cfg = get_config()
     lines = [f"default: {cfg.llm.provider}/{cfg.llm.model}"]
     for role in LLM_AGENT_ROLES:
